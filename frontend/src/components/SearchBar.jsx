@@ -26,7 +26,7 @@ const SearchBar = ({ onSearch, hasSearched, onSidebarToggle }) => {
       style={{ 
         width: '100vw', 
         display: 'flex', 
-        justifyContent: 'center', 
+        justifyContent: hasSearched ? 'space-between' : 'center', 
         alignItems: 'center',
         gap: '1rem',
         padding: '0 2rem'
@@ -34,11 +34,11 @@ const SearchBar = ({ onSearch, hasSearched, onSidebarToggle }) => {
     >
       <motion.div
         layout
-        animate={{
-          width: hasSearched ? { xs: '100%', sm: '600px', md: '700px' } : { xs: '90%', sm: '600px', md: '800px' },
-        }}
         transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
-        style={{ position: 'relative', maxWidth: hasSearched ? '700px' : '800px' }}
+        style={{ 
+          width: hasSearched ? 'calc(100vw - 5rem - 48px)' : '75vw',
+          maxWidth: hasSearched ? 'calc(100vw - 5rem - 48px)' : '75vw'
+        }}
       >
         <Box
           component="form"
@@ -90,7 +90,7 @@ const SearchBar = ({ onSearch, hasSearched, onSidebarToggle }) => {
             placeholder="Describe what you're looking for..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            onKeyPress={handleKeyPress}
+            onKeyDown={handleKeyPress}
             variant="plain"
             sx={{
               flex: 1,
