@@ -1,17 +1,41 @@
-import { useState } from 'react';
-import { Box, Input, IconButton, Typography } from '@mui/joy';
-import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
+import { Box, Input, IconButton, Typography, Tooltip } from '@mui/joy';
+import { motion, AnimatePresence } from 'framer-motion';
 import SearchIcon from '@mui/icons-material/Search';
 import TuneIcon from '@mui/icons-material/Tune';
 
 const SearchBar = ({ onSearch, hasSearched, onSidebarToggle }) => {
   const [query, setQuery] = useState('');
+  const [showTutorial, setShowTutorial] = useState(false);
+  const [hasShownTutorial, setHasShownTutorial] = useState(false);
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (query.trim()) {
       onSearch(query.trim());
+      // Show tutorial after first search if not shown before
+      if (!hasShownTutorial && !hasSearched) {
+        setTimeout(() => {
+          setShowTutorial(true);
+          setHasShownTutorial(true);
+        }, 1000); // Show tutorial 1 second after search
+      }
     }
+  };
+
+  // Auto-hide tutorial after 4 seconds
+  useEffect(() => {
+    if (showTutorial) {
+      const timer = setTimeout(() => {
+        setShowTutorial(false);
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [showTutorial]);
+
+  // Close tutorial manually
+  const closeTutorial = () => {
+    setShowTutorial(false);
   };
 
   const handleKeyPress = (e) => {
@@ -148,23 +172,99 @@ const SearchBar = ({ onSearch, hasSearched, onSidebarToggle }) => {
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.3, delay: 0.2 }}
+          style={{ position: 'relative' }}
         >
-          <IconButton
-            variant="outlined"
-            onClick={onSidebarToggle}
+          <Tooltip
+            title={
+              <Box sx={{ p: 1, cursor: 'pointer' }} onClick={closeTutorial}>
+                <Typography level="body-sm" sx={{ fontWeight: 600, mb: 0.5, color: 'white' }}>
+                  🎯 Use Filters
+                </Typography>
+                <Typography level="body-xs" sx={{ color: 'rgba(255,255,255,0.9)', mb: 0.5 }}>
+                  Click here to filter by category, price, and ratings
+                </Typography>
+                <Typography level="body-xs" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem', fontStyle: 'italic' }}>
+                  Click anywhere to dismiss
+                </Typography>
+              </Box>
+            }
+            open={showTutorial}
+            placement="bottom-start"
+            arrow
+            variant="solid"
+            color="neutral"
             sx={{
-              minHeight: 48,
-              minWidth: 48,
-              borderRadius: '12px',
-              borderColor: 'neutral.200',
-              '&:hover': {
-                borderColor: 'neutral.300',
-                backgroundColor: 'neutral.50'
+              '& .MuiTooltip-tooltip': {
+                bgcolor: 'rgba(0,0,0,0.9)',
+                borderRadius: '8px',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+              },
+              '& .MuiTooltip-arrow': {
+                color: 'rgba(0,0,0,0.9)',
               }
             }}
           >
-            <TuneIcon sx={{ fontSize: 20 }} />
-          </IconButton>
+            <IconButton
+              variant="outlined"
+              onClick={onSidebarToggle}
+              sx={{
+                minHeight: 48,
+                minWidth: 48,
+                borderRadius: '12px',
+                borderColor: showTutorial ? 'neutral.400' : 'neutral.200',
+                backgroundColor: showTutorial ? 'neutral.50' : 'transparent',
+                transform: showTutorial ? 'scale(1.05)' : 'scale(1)',
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  borderColor: 'neutral.300',
+                  backgroundColor: 'neutral.50'
+                }
+              }}
+            >
+              <TuneIcon sx={{ fontSize: 20 }} />
+            </IconButton>
+          </Tooltip>
+
+          {/* Tutorial pulse animation */}
+          <AnimatePresence>
+            {showTutorial && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                style={{
+                  position: 'absolute',
+                  top: -2,
+                  left: -2,
+                  right: -2,
+                  bottom: -2,
+                  borderRadius: '14px',
+                  border: '2px solid #333',
+                  pointerEvents: 'none',
+                  zIndex: -1
+                }}
+              >
+                <motion.div
+                  animate={{
+                    scale: [1, 1.1, 1],
+                    opacity: [0.3, 0.6, 0.3],
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }}
+                  style={{
+                    position: 'absolute',
+                    inset: -4,
+                    borderRadius: '16px',
+                    border: '2px solid #333',
+                    opacity: 0.3
+                  }}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.div>
       )}
     </motion.div>
