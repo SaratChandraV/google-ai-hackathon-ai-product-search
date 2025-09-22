@@ -1,0 +1,4 @@
+.venv
+.env
+big_query_conn.json
+__pycache__/

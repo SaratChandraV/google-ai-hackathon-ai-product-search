@@ -41,7 +41,7 @@ const PromptChips = ({ prompts, onUpdatePrompt, onDeletePrompt, onToggleSelectio
     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, maxWidth: '100%', mx: 'auto' }}>
       <AnimatePresence mode="popLayout">
         {prompts.map((prompt) => {
-          const isSelected = prompt.selected ?? true;
+          const isSelected = prompt.selected ?? true; // Default to true if not specified
           return (
             <motion.div
               key={prompt.id}

@@ -132,51 +132,182 @@ function App() {
     }
   ];
 
+  // API call function
+  const callSearchAPI = async (queryText) => {
+    try {
+      console.log('Calling API with query:', queryText);
+      const response = await fetch('http://localhost:8000/query', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          query: queryText
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`API call failed with status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('API Response:', data);
+      
+      // Transform API response to match UI expectations
+      return Array.isArray(data) ? data : [];
+    } catch (error) {
+      console.error('Error calling search API:', error);
+      // Return mock data as fallback for demo purposes
+      console.log('Using mock data as fallback');
+      return mockProducts.map(product => ({
+        name: product.name,
+        img: product.image,
+        price: product.price.replace('$', ''),
+        brand: 'Mock Brand',
+        avg_rating: product.rating.toString()
+      }));
+    }
+  };
+
+  // Function to get concatenated query from selected prompts
+  const getConcatenatedQuery = () => {
+    const selectedPromptTexts = searchHistory
+      .filter(prompt => prompt.selected)
+      .map(prompt => prompt.text);
+    console.log('Selected prompts:', selectedPromptTexts);
+    const concatenatedQuery = selectedPromptTexts.join(' ');
+    console.log('Concatenated query:', concatenatedQuery);
+    return concatenatedQuery;
+  };
+
+  // Function to trigger API call with current selection
+  const triggerSearch = async () => {
+    const concatenatedQuery = getConcatenatedQuery();
+    if (!concatenatedQuery.trim()) {
+      console.log('No selected prompts, skipping search');
+      return;
+    }
+
+    console.log('Triggering search with concatenated query:', concatenatedQuery);
+    setIsLoading(true);
+    try {
+      const apiResults = await callSearchAPI(concatenatedQuery);
+      setProducts(apiResults);
+    } catch (error) {
+      console.error('Search failed:', error);
+      setProducts([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSearch = async (query) => {
     if (!query.trim()) return;
     
+    console.log('Handling search for query:', query);
     setSearchQuery(query);
     setHasSearched(true);
     
-    // Add to search history if not already exists
-    if (!searchHistory.find(item => item.text === query)) {
+    // Add to search history if not already exists, with selected: true by default
+    const existingPrompt = searchHistory.find(item => item.text === query);
+    if (!existingPrompt) {
       const newPrompt = {
         id: Date.now(),
         text: query,
-        selected: false
+        selected: true // Default to selected
       };
-      setSearchHistory(prev => [...prev, newPrompt]);
+      console.log('Adding new prompt to history:', newPrompt);
+      
+      // Update search history first
+      const updatedHistory = [...searchHistory, newPrompt];
+      setSearchHistory(updatedHistory);
+      
+      // Then get concatenated query from the updated history
+      const selectedTexts = updatedHistory
+        .filter(prompt => prompt.selected)
+        .map(prompt => prompt.text);
+      const concatenatedQuery = selectedTexts.join(' ');
+      
+      console.log('Concatenated query with new prompt:', concatenatedQuery);
+      
+      // Search with concatenated query
+      setIsLoading(true);
+      try {
+        const apiResults = await callSearchAPI(concatenatedQuery);
+        setProducts(apiResults);
+      } catch (error) {
+        console.error('Search failed:', error);
+        setProducts([]);
+      } finally {
+        setIsLoading(false);
+      }
+    } else {
+      console.log('Query already exists, triggering search with current selection');
+      // Query already exists, just trigger search with current selection
+      triggerSearch();
     }
-    
-    setIsLoading(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      setProducts(mockProducts);
-      setIsLoading(false);
-    }, 2000);
   };
 
   const updatePrompt = (id, newText) => {
-    setSearchHistory(prev => 
-      prev.map(prompt => 
+    console.log('Updating prompt ID:', id, 'with new text:', newText);
+    setSearchHistory(prev => {
+      const updated = prev.map(prompt => 
         prompt.id === id ? { ...prompt, text: newText } : prompt
-      )
-    );
+      );
+      console.log('Updated search history after edit:', updated);
+      return updated;
+    });
+    // Trigger search after updating
+    setTimeout(() => {
+      console.log('Triggering search after prompt update');
+      triggerSearch();
+    }, 100);
   };
 
   const deletePrompt = (id) => {
-    setSearchHistory(prev => prev.filter(prompt => prompt.id !== id));
+    console.log('Deleting prompt ID:', id);
+    setSearchHistory(prev => {
+      const updated = prev.filter(prompt => prompt.id !== id);
+      console.log('Updated search history after delete:', updated);
+      return updated;
+    });
     setSelectedPrompts(prev => prev.filter(promptId => promptId !== id));
+    // Trigger search after deleting
+    setTimeout(() => {
+      console.log('Triggering search after prompt deletion');
+      triggerSearch();
+    }, 100);
   };
 
   const togglePromptSelection = (id) => {
-    setSearchHistory(prev => 
-      prev.map(prompt => 
-        prompt.id === id ? { ...prompt, selected: !prompt.selected } : prompt
-      )
-    );
+    console.log('Toggling selection for prompt ID:', id);
+    setSearchHistory(prev => {
+      const updated = prev.map(prompt => {
+        if (prompt.id === id) {
+          console.log(`Toggling prompt "${prompt.text}" from ${prompt.selected} to ${!prompt.selected}`);
+          return { ...prompt, selected: !prompt.selected };
+        }
+        return prompt;
+      });
+      console.log('Updated search history:', updated);
+      return updated;
+    });
+    // Trigger search after toggling
+    setTimeout(() => {
+      console.log('About to trigger search after toggle');
+      triggerSearch();
+    }, 100);
   };
+
+  // Effect to handle initial search trigger when search history has items
+  useEffect(() => {
+    if (hasSearched && searchHistory.length > 0) {
+      const hasSelectedPrompts = searchHistory.some(prompt => prompt.selected);
+      if (hasSelectedPrompts && products.length === 0 && !isLoading) {
+        triggerSearch();
+      }
+    }
+  }, [searchHistory, hasSearched]);
 
   return (
     <CssVarsProvider theme={theme}>

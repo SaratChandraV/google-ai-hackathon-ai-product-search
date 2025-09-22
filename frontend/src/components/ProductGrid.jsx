@@ -54,7 +54,7 @@ const ProductCard = ({ product, index }) => {
         >
           {/* Product Image */}
           <motion.img
-            src={product.image}
+            src={product.img || product.image}
             alt={product.name}
             onLoad={() => setImageLoaded(true)}
             animate={{
@@ -232,9 +232,23 @@ const ProductCard = ({ product, index }) => {
               level="body-xs"
               sx={{ color: 'text.secondary', fontSize: '0.75rem' }}
             >
-              ({product.rating})
+              ({product.avg_rating || product.rating || 0})
             </Typography>
           </Box>
+
+          {/* Brand */}
+          {product.brand && (
+            <Typography
+              level="body-sm"
+              sx={{
+                color: 'text.secondary',
+                fontSize: '0.875rem',
+                mb: 1
+              }}
+            >
+              {product.brand}
+            </Typography>
+          )}
 
           <Typography
             level="title-lg"
@@ -245,7 +259,7 @@ const ProductCard = ({ product, index }) => {
               mt: 'auto'
             }}
           >
-            {product.price}
+            ${parseFloat(product.price / 88 || '0').toFixed(2)}
           </Typography>
         </Box>
       </Card>
@@ -303,7 +317,7 @@ const ProductGrid = ({ products }) => {
       >
         {products.map((product, index) => (
           <ProductCard
-            key={product.id}
+            key={product.id || `${product.name}-${index}`}
             product={product}
             index={index}
           />
